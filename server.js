@@ -16,8 +16,13 @@ app.use(
     origin: process.env.CORS_ORIGINS?.split(",") || [
       "http://localhost:3000",
       "http://localhost:3001",
+      "https://admin.gpkahir.in",
+      "https://www.gpkahir.in",
+      "https://gpkahir.in",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
