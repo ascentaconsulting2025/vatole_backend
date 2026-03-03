@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Document = require("../models/Document");
 const auth = require("../middleware/auth");
-const { checkWritePermission } = require("../middleware/checkPermission");
 
 // @route   GET /api/documents
 // @desc    Get all documents
@@ -27,8 +26,8 @@ router.get("/", async (req, res) => {
 
 // @route   POST /api/documents
 // @desc    Create or update documents
-// @access  Private (Task 2)
-router.post("/", auth, checkWritePermission("task2"), async (req, res) => {
+// @access  Private
+router.post("/", auth, async (req, res) => {
   try {
     const { documents } = req.body;
 

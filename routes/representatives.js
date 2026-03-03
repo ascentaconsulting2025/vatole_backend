@@ -3,7 +3,6 @@ const router = express.Router();
 const Representative = require("../models/Representative");
 const auth = require("../middleware/auth");
 const { upload, uploadFileToSupabase } = require("../middleware/upload");
-const { checkWritePermission } = require("../middleware/checkPermission");
 
 // @route   GET /api/representatives
 // @desc    Get all representatives
@@ -28,8 +27,8 @@ router.get("/", async (req, res) => {
 
 // @route   POST /api/representatives
 // @desc    Create or update all representatives
-// @access  Private (Task 1)
-router.post("/", auth, checkWritePermission("task1"), async (req, res) => {
+// @access  Private
+router.post("/", auth, async (req, res) => {
   try {
     const { representatives } = req.body;
 
@@ -60,50 +59,44 @@ router.post("/", auth, checkWritePermission("task1"), async (req, res) => {
 
 // @route   POST /api/representatives/upload
 // @desc    Upload representative image
-// @access  Private (Task 1)
-router.post(
-  "/upload",
-  auth,
-  checkWritePermission("task1"),
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded",
-        });
-      }
-
-      // Upload to Supabase
-      const supabaseResult = await uploadFileToSupabase(
-        req.file,
-        req.body.category || "officials"
-      );
-
-      res.json({
-        success: true,
-        message: "Image uploaded successfully",
-        data: {
-          filePath: supabaseResult.filePath,
-          imageUrl: supabaseResult.publicUrl,
-        },
-      });
-    } catch (error) {
-      console.error("Upload image error:", error);
-      res.status(500).json({
+// @access  Private
+router.post("/upload", auth, upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
         success: false,
-        message: "Error uploading image",
-        error: error.message,
+        message: "No file uploaded",
       });
     }
+
+    // Upload to Supabase
+    const supabaseResult = await uploadFileToSupabase(
+      req.file,
+      req.body.category || "officials"
+    );
+
+    res.json({
+      success: true,
+      message: "Image uploaded successfully",
+      data: {
+        filePath: supabaseResult.filePath,
+        imageUrl: supabaseResult.publicUrl,
+      },
+    });
+  } catch (error) {
+    console.error("Upload image error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error uploading image",
+      error: error.message,
+    });
   }
-);
+});
 
 // @route   DELETE /api/representatives/:id
 // @desc    Delete a representative
-// @access  Private (Task 1)
-router.delete("/:id", auth, checkWritePermission("task1"), async (req, res) => {
+// @access  Private
+router.delete("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 

@@ -16,13 +16,8 @@ app.use(
     origin: process.env.CORS_ORIGINS?.split(",") || [
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://admin.gpkahir.in",
-      "https://www.gpkahir.in",
-      "https://gpkahir.in",
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
@@ -81,7 +76,6 @@ const setupDatabase = require("./scripts/setupDatabase");
 
 // Import Routes
 const authRoutes = require("./routes/auth");
-const usersRoutes = require("./routes/users");
 const representativesRoutes = require("./routes/representatives");
 const documentsRoutes = require("./routes/documents");
 const certificatesRoutes = require("./routes/certificates");
@@ -95,7 +89,6 @@ const announcementsRoutes = require("./routes/announcements");
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", usersRoutes);
 app.use("/api/representatives", representativesRoutes);
 app.use("/api/documents", documentsRoutes);
 app.use("/api/certificates", certificatesRoutes);

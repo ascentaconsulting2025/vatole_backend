@@ -18,24 +18,6 @@ const Infrastructure = {
     }));
   },
 
-  // Get infrastructure by subcategory
-  findBySubcategory: async (subcategory) => {
-    const query =
-      'SELECT * FROM infrastructure WHERE subcategory = $1 ORDER BY "order"';
-    const result = await pool.query(query, [subcategory]);
-
-    // Transform to match expected format
-    return result.rows.map((row) => ({
-      id: row.id,
-      subcategory: row.subcategory,
-      facility: row.facility,
-      count: row.count,
-      order: row.order,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
-  },
-
   // Create infrastructure (bulk)
   createMany: async (infrastructureList) => {
     const client = await pool.connect();

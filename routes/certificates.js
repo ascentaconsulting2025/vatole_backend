@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Certificate = require("../models/Certificate");
 const auth = require("../middleware/auth");
-const { checkWritePermission } = require("../middleware/checkPermission");
 
 // @route   GET /api/certificates
 // @desc    Get all certificates
@@ -27,8 +26,8 @@ router.get("/", async (req, res) => {
 
 // @route   POST /api/certificates
 // @desc    Create or update certificates
-// @access  Private (Task 3)
-router.post("/", auth, checkWritePermission("task3"), async (req, res) => {
+// @access  Private
+router.post("/", auth, async (req, res) => {
   try {
     const { certificates } = req.body;
 
@@ -59,8 +58,8 @@ router.post("/", auth, checkWritePermission("task3"), async (req, res) => {
 
 // @route   DELETE /api/certificates/:id
 // @desc    Delete a certificate
-// @access  Private (Task 3)
-router.delete("/:id", auth, checkWritePermission("task3"), async (req, res) => {
+// @access  Private
+router.delete("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 

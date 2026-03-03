@@ -3,7 +3,6 @@ const router = express.Router();
 const HeroImage = require("../models/HeroImage");
 const auth = require("../middleware/auth");
 const uploadMiddleware = require("../middleware/upload");
-const { checkWritePermission } = require("../middleware/checkPermission");
 const { uploadFileToSupabase } = uploadMiddleware;
 const upload = uploadMiddleware.upload;
 
@@ -25,55 +24,49 @@ router.get("/", async (req, res) => {
 });
 
 // Upload new hero image (protected, max 3)
-router.post(
-  "/upload",
-  auth,
-  checkWritePermission("task9"),
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No image file provided",
-        });
-      }
-
-      // Check if already have 3 images
-      const count = await HeroImage.getCount();
-      if (count >= 3) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Maximum 3 hero images allowed. Please delete an existing image first.",
-        });
-      }
-
-      // Upload to Supabase
-      const uploadResult = await uploadFileToSupabase(req.file, "hero-images");
-
-      // Save to database with order
-      const order = count + 1; // Auto-assign order based on count
-      const heroImage = await HeroImage.create({
-        image_path: uploadResult.filePath,
-        image_url: uploadResult.publicUrl,
-        order: order,
-      });
-
-      res.json({
-        success: true,
-        message: "Hero image uploaded successfully",
-        data: heroImage,
-      });
-    } catch (error) {
-      console.error("Upload hero image error:", error);
-      res.status(500).json({
+router.post("/upload", auth, upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
         success: false,
-        message: "Failed to upload hero image",
+        message: "No image file provided",
       });
     }
+
+    // Check if already have 3 images
+    const count = await HeroImage.getCount();
+    if (count >= 3) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Maximum 3 hero images allowed. Please delete an existing image first.",
+      });
+    }
+
+    // Upload to Supabase
+    const uploadResult = await uploadFileToSupabase(req.file, "hero-images");
+
+    // Save to database with order
+    const order = count + 1; // Auto-assign order based on count
+    const heroImage = await HeroImage.create({
+      image_path: uploadResult.filePath,
+      image_url: uploadResult.publicUrl,
+      order: order,
+    });
+
+    res.json({
+      success: true,
+      message: "Hero image uploaded successfully",
+      data: heroImage,
+    });
+  } catch (error) {
+    console.error("Upload hero image error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload hero image",
+    });
   }
-);
+});
 
 // Update hero image order
 router.patch("/:id/order", auth, async (req, res) => {
@@ -112,7 +105,7 @@ router.patch("/:id/order", auth, async (req, res) => {
 });
 
 // Delete hero image
-router.delete("/:id", auth, checkWritePermission("task9"), async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
     const deletedImage = await HeroImage.delete(id);
