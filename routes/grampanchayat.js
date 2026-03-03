@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const GrampanchayatInfo = require("../models/GrampanchayatInfo");
 const auth = require("../middleware/auth");
+const { checkWritePermission } = require("../middleware/checkPermission");
 
 // @route   GET /api/grampanchayat
 // @desc    Get grampanchayat info
@@ -19,7 +20,7 @@ router.get("/", async (req, res) => {
 
     res.json({
       success: true,
-      data: info,
+      data: Array.isArray(info) ? info[0] : info,
     });
   } catch (error) {
     console.error("Get grampanchayat info error:", error);
@@ -34,7 +35,7 @@ router.get("/", async (req, res) => {
 // @route   POST /api/grampanchayat
 // @desc    Create or update grampanchayat info
 // @access  Private
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, checkWritePermission("task7"), async (req, res) => {
   try {
     // Save grampanchayat info (model handles delete and insert)
     const info = await GrampanchayatInfo.save(req.body);

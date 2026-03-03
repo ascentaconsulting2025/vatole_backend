@@ -34,6 +34,7 @@ const auth = async (req, res, next) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      permissions: user.permissions || [],
       is_active: user.is_active,
     };
 

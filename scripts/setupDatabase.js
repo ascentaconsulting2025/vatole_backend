@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'admin' CHECK (role IN ('admin', 'editor')),
+    role VARCHAR(50) DEFAULT 'editor' CHECK (role IN ('admin', 'editor', 'viewer')),
+    permissions JSONB DEFAULT '[]',
     is_active BOOLEAN DEFAULT true,
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -280,14 +281,20 @@ async function setupDatabase() {
     if (existingAdmin.rows.length === 0) {
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await pool.query(
-        "INSERT INTO users (email, password, role, is_active) VALUES ($1, $2, $3, $4)",
-        [adminEmail, hashedPassword, "admin", true]
+        "INSERT INTO users (email, password, role, permissions, is_active) VALUES ($1, $2, $3, $4, $5)",
+        [adminEmail, hashedPassword, "admin", JSON.stringify(["*"]), true]
       );
       console.log(`✅ Admin user created: ${adminEmail}`);
       console.log(`🔑 Password: ${adminPassword}`);
       console.log("⚠️  IMPORTANT: Change this password after first login!");
     } else {
       console.log("ℹ️  Admin user already exists");
+
+      // Update existing admin to have permissions if missing
+      await pool.query(
+        "UPDATE users SET permissions = $1 WHERE email = $2 AND (permissions IS NULL OR permissions = '[]'::jsonb)",
+        [JSON.stringify(["*"]), adminEmail]
+      );
     }
 
     // Verify setup

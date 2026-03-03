@@ -5,10 +5,12 @@ const HistoricalData = {
   findAll: async () => {
     const eventsQuery = "SELECT * FROM historical_events ORDER BY year DESC";
     const placesQuery = "SELECT * FROM historical_places ORDER BY place_name";
+    const awardsQuery = "SELECT * FROM historical_awards ORDER BY year DESC";
 
-    const [eventsResult, placesResult] = await Promise.all([
+    const [eventsResult, placesResult, awardsResult] = await Promise.all([
       pool.query(eventsQuery),
       pool.query(placesQuery),
+      pool.query(awardsQuery),
     ]);
 
     return {
@@ -24,11 +26,17 @@ const HistoricalData = {
         placeInfo: row.place_info,
         image: row.image,
       })),
+      awards: awardsResult.rows.map((row) => ({
+        id: row.id,
+        awardName: row.award_name,
+        awardDescription: row.award_description,
+        year: row.year,
+      })),
     };
   },
 
   // Save all historical data
-  saveAll: async (events, places) => {
+  saveAll: async (events, places, awards) => {
     const client = await pool.connect();
 
     try {
@@ -100,9 +108,43 @@ const HistoricalData = {
         return result;
       });
 
-      const [eventResults, placeResults] = await Promise.all([
+      // Process awards with upsert
+      const awardPromises = (awards || []).map(async (award) => {
+        let result;
+        if (award.id) {
+          // Update existing award
+          const updateQuery = `
+            UPDATE historical_awards
+            SET award_name = $1, award_description = $2, year = $3, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4
+            RETURNING *
+          `;
+          result = await client.query(updateQuery, [
+            award.awardName,
+            award.awardDescription || null,
+            award.year || null,
+            award.id,
+          ]);
+        } else {
+          // Insert new award
+          const insertQuery = `
+            INSERT INTO historical_awards (award_name, award_description, year)
+            VALUES ($1, $2, $3)
+            RETURNING *
+          `;
+          result = await client.query(insertQuery, [
+            award.awardName,
+            award.awardDescription || null,
+            award.year || null,
+          ]);
+        }
+        return result;
+      });
+
+      const [eventResults, placeResults, awardResults] = await Promise.all([
         Promise.all(eventPromises),
         Promise.all(placePromises),
+        Promise.all(awardPromises),
       ]);
 
       await client.query("COMMIT");
@@ -119,6 +161,12 @@ const HistoricalData = {
           placeName: r.rows[0].place_name,
           placeInfo: r.rows[0].place_info,
           image: r.rows[0].image,
+        })),
+        awards: awardResults.map((r) => ({
+          id: r.rows[0].id,
+          awardName: r.rows[0].award_name,
+          awardDescription: r.rows[0].award_description,
+          year: r.rows[0].year,
         })),
       };
     } catch (error) {

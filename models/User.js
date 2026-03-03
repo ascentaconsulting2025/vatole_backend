@@ -3,17 +3,27 @@ const bcrypt = require("bcryptjs");
 
 const User = {
   // Create a new user
-  create: async (email, password, role = "admin") => {
+  create: async (email, password, role = "editor", permissions = []) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Admin gets all permissions by default
+    if (role === "admin" && permissions.length === 0) {
+      permissions = ["*"];
+    }
+
     const query = `
-      INSERT INTO users (email, password, role)
-      VALUES ($1, $2, $3)
-      RETURNING id, email, role, is_active, created_at
+      INSERT INTO users (email, password, role, permissions)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, email, role, permissions, is_active, created_at
     `;
 
-    const result = await pool.query(query, [email, hashedPassword, role]);
+    const result = await pool.query(query, [
+      email,
+      hashedPassword,
+      role,
+      JSON.stringify(permissions),
+    ]);
     return result.rows[0];
   },
 
@@ -27,7 +37,7 @@ const User = {
   // Find user by ID
   findById: async (id) => {
     const query =
-      "SELECT id, email, role, is_active, last_login, created_at FROM users WHERE id = $1";
+      "SELECT id, email, role, permissions, is_active, last_login, created_at FROM users WHERE id = $1";
     const result = await pool.query(query, [id]);
     return result.rows[0];
   },
@@ -52,8 +62,14 @@ const User = {
 
     Object.keys(updates).forEach((key) => {
       if (updates[key] !== undefined) {
-        fields.push(`${key} = $${paramCount}`);
-        values.push(updates[key]);
+        // Handle permissions as JSON
+        if (key === "permissions") {
+          fields.push(`${key} = $${paramCount}`);
+          values.push(JSON.stringify(updates[key]));
+        } else {
+          fields.push(`${key} = $${paramCount}`);
+          values.push(updates[key]);
+        }
         paramCount++;
       }
     });
@@ -65,10 +81,25 @@ const User = {
       UPDATE users 
       SET ${fields.join(", ")}
       WHERE id = $${paramCount}
-      RETURNING id, email, role, is_active, created_at
+      RETURNING id, email, role, permissions, is_active, created_at
     `;
 
     const result = await pool.query(query, values);
+    return result.rows[0];
+  },
+
+  // Get all users (for admin user management)
+  findAll: async () => {
+    const query =
+      "SELECT id, email, role, permissions, is_active, last_login, created_at FROM users ORDER BY created_at DESC";
+    const result = await pool.query(query);
+    return result.rows;
+  },
+
+  // Delete user
+  delete: async (id) => {
+    const query = "DELETE FROM users WHERE id = $1 RETURNING id";
+    const result = await pool.query(query, [id]);
     return result.rows[0];
   },
 };

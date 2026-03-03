@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Infrastructure = require("../models/Infrastructure");
 const auth = require("../middleware/auth");
+const { checkWritePermission } = require("../middleware/checkPermission");
 
 // @route   GET /api/infrastructure
 // @desc    Get all infrastructure
@@ -24,10 +25,34 @@ router.get("/", async (req, res) => {
   }
 });
 
+// @route   GET /api/infrastructure/subcategory/:subcategory
+// @desc    Get infrastructure by subcategory
+// @access  Public
+router.get("/subcategory/:subcategory", async (req, res) => {
+  try {
+    const { subcategory } = req.params;
+    const infrastructure = await Infrastructure.findBySubcategory(
+      decodeURIComponent(subcategory)
+    );
+
+    res.json({
+      success: true,
+      data: infrastructure,
+    });
+  } catch (error) {
+    console.error("Get infrastructure by subcategory error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching infrastructure",
+      error: error.message,
+    });
+  }
+});
+
 // @route   POST /api/infrastructure
 // @desc    Create or update infrastructure
 // @access  Private
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, checkWritePermission("task5"), async (req, res) => {
   try {
     const { infrastructure, subcategory } = req.body;
 
@@ -65,7 +90,7 @@ router.post("/", auth, async (req, res) => {
 // @route   DELETE /api/infrastructure/:id
 // @desc    Delete an infrastructure item
 // @access  Private
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, checkWritePermission("task5"), async (req, res) => {
   try {
     const { id } = req.params;
 

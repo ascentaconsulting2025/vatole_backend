@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Announcement = require("../models/Announcement");
 const auth = require("../middleware/auth");
+const { checkWritePermission } = require("../middleware/checkPermission");
 const {
   documentUpload,
   uploadFileToSupabase,
@@ -30,8 +31,8 @@ router.get("/", async (req, res) => {
 
 // @route   POST /api/announcements
 // @desc    Create announcements
-// @access  Private
-router.post("/", auth, async (req, res) => {
+// @access  Private (Task 8)
+router.post("/", auth, checkWritePermission("task8"), async (req, res) => {
   try {
     const { announcements } = req.body;
 
@@ -61,8 +62,8 @@ router.post("/", auth, async (req, res) => {
 
 // @route   DELETE /api/announcements/:id
 // @desc    Delete an announcement
-// @access  Private
-router.delete("/:id", auth, async (req, res) => {
+// @access  Private (Task 8)
+router.delete("/:id", auth, checkWritePermission("task8"), async (req, res) => {
   try {
     const { id } = req.params;
 
